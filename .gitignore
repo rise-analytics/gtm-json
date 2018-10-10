@@ -23,4 +23,6 @@ Thumbs.db
 
 # etc
 tag_audit.csv
+trigger_audit.csv
+variable_audit.csv
 test.json
