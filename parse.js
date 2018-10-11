@@ -15,7 +15,6 @@ Object.prototype.searchTable = function(toFind){
     }
     return null;
 }
-
 Array.prototype.pushIfUnique = function(toAdd){
     if (this.indexOf(toAdd) === -1){
         this.push(toAdd)
@@ -26,38 +25,40 @@ function csv(category, filepath){
     this.category = category
     this.filepath = filepath
     this.keys = []
-    this.filterKeys = []
-    this.paramKeys = []
+    this.keys_1 = []
+    this.keys_2 = []
     this.init = function(){
         var keys = []
-        var paramKeys = []
-        var filterKeys = []
+        var keys_1 = []
+        var keys_2 = []
         for (let i=0;i<this.category.length;i++){
             Object.keys(this.category[i]).forEach(function(obj){
                 keys.pushIfUnique(obj);
             })
-            // checks to see if tag or variable
-            if (this.category[i].searchTable("parameter") !== null){
-                this.category[i].parameter.map(a => a.key).forEach(function(obj){
-                    paramKeys.pushIfUnique(obj);
-                });
-            }
-            // // checks to see if trigger
-            if (this.category[i].searchTable("filter") !== null){
-                this.category[i].filter.forEach(function(child){
-                    Object.keys(child).forEach(function(obj){
-                        filterKeys.pushIfUnique(obj);
-                    })
-                    child.parameter.map(a => a.key).forEach(function(obj){
-                        paramKeys.pushIfUnique(obj);
-                    });
-                })
+            for (let j in this.category[i]) {
+                if (typeof this.category[i][j] == "object") {
+                    for (let k in this.category[i][j]){
+                        if (this.category[i][j][k].hasOwnProperty("key")){
+                            keys_1.pushIfUnique(this.category[i][j][k].searchTable("key"))
+                        } else {
+                            if (typeof this.category[i][j][k] == "object"){
+                                for (let l in this.category[i][j][k]){
+                                    for (let m in this.category[i][j][k][l]){
+                                        if (this.category[i][j][k][l][m].hasOwnProperty("key")){
+                                            keys_2.pushIfUnique(j +"|"+ this.category[i][j][k][l][m].searchTable("key"))
+                                        } 
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
-        this.keys = keys.filter(word => word !== "parameter" && word !== "filter")
-        this.filterKeys = filterKeys.filter(word => word !== "parameter")
-        this.paramKeys = paramKeys.sort()
-        return "init done"
+        this.keys = keys.filter(word => word !== "parameter")
+        this.keys_1 = keys_1.sort().filter(word => word !== "parameter")
+        this.keys_2 = keys_2.sort()
+        return
     }
     this.generateColumns = function(){
         var columns = {
@@ -74,35 +75,48 @@ function csv(category, filepath){
             }
         }
         iterateOverKeys(this.keys)
-        iterateOverKeys(this.filterKeys, "|condition")
-        iterateOverKeys(this.paramKeys)
+        iterateOverKeys(this.keys_1)
+        iterateOverKeys(this.keys_2)
         return columns
     }
     this.generateRows = function(){
         var rows = []
         for (let i=0;i<this.category.length;i++){
-            var k = new Object()
+            var r = new Object()
             for (let j=0; j<this.keys.length;j++){
-                let res = JSON.stringify(this.category[i].searchTable(this.keys[j])) !== "null" ? JSON.stringify(this.category[i].searchTable(this.keys[j])) : ""
-                k[this.keys[j]] = res.split("\"").join("").split("[").join("").split("]").join("")
+                if (this.category[i].searchTable(this.keys[j]) !== null){
+                    if (this.category[i].searchTable(this.keys[j]).hasOwnProperty("value")){
+                        r[this.keys[j]] = this.category[i].searchTable(this.keys[j]).value
+                    } else {
+                        r[this.keys[j]] = JSON.stringify(this.category[i].searchTable(this.keys[j])).split("{\"").join("").split("\"}").join("").split("\"").join("").split("]").join("").split("[").join("")
+                    }
+                    rows.push(r)
+                }
             }
-            if (this.category[i].searchTable("parameter") !== null){
-                this.category[i].searchTable("parameter").forEach(function(obj){
-                    k[obj.searchTable("key")] = obj.searchTable("value")
-                })
-                rows.push(k)
+            for (let j in this.category[i]){
+                if (typeof this.category[i][j] == "object"){
+                    for (let k in this.category[i][j]){
+                        if (this.category[i][j][k].hasOwnProperty("key")){
+                            r[this.category[i][j][k].searchTable("key")] = this.category[i][j][k].searchTable("value")
+                        } else {
+                            if (typeof this.category[i][j][k] == "object"){
+                                for (let l in this.category[i][j][k]){
+                                    r[j] = this.category[i][j][k].searchTable("type")
+                                    for (let m in this.category[i][j][k][l]){
+                                        if (this.category[i][j][k][l][m].hasOwnProperty("key")){
+                                            r[(j +"|"+ this.category[i][j][k][l][m].searchTable("key"))] = this.category[i][j][k][l][m].searchTable("value")
+                                        } 
+                                        rows.push(r)
+                                    }
+                                    rows.push(r)
+                                }
+                            }
+                            rows.push(r)
+                        }
+                        rows.push(r)
+                    }
+                }
             }
-            if (this.category[i].searchTable("filter") !== null){
-                this.category[i].searchTable("filter").forEach(function(child){
-                    k["type|condition"] = child.searchTable("type")
-                    child.searchTable("parameter").forEach(function(obj){
-                        k[obj.searchTable("key")] = obj.searchTable("value")
-                    })
-                    rows.push(k)
-                })
-                rows.push(k)
-            }
-            rows.push(k)
         }
         return rows
     }
@@ -124,6 +138,5 @@ fs.readFile(fileName, 'utf8', function(err, data) {
 
     tag.generateCsv();
     variable.generateCsv();
-    // trigger.generateCsv();
-
+    trigger.generateCsv();
 });
