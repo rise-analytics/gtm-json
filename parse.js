@@ -89,7 +89,7 @@ function csv(category, filepath){
                     } else {
                         r[this.keys[j]] = JSON.stringify(this.category[i].searchTable(this.keys[j])).split("{\"").join("").split("\"}").join("").split("\"").join("").split("]").join("").split("[").join("")
                     }
-                    rows.push(r)
+                    rows.pushIfUnique(r)
                 }
             }
             for (let j in this.category[i]){
@@ -105,14 +105,14 @@ function csv(category, filepath){
                                         if (this.category[i][j][k][l][m].hasOwnProperty("key")){
                                             r[(j +"|"+ this.category[i][j][k][l][m].searchTable("key"))] = this.category[i][j][k][l][m].searchTable("value")
                                         } 
-                                        rows.push(r)
+                                        rows.pushIfUnique(r)
                                     }
-                                    rows.push(r)
+                                    rows.pushIfUnique(r)
                                 }
                             }
-                            rows.push(r)
+                            rows.pushIfUnique(r)
                         }
-                        rows.push(r)
+                        rows.pushIfUnique(r)
                     }
                 }
             }
