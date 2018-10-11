@@ -1,6 +1,5 @@
 
 const fs = require('fs')
-
 const myArgs = process.argv
 const fileName = process.argv[2]
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
